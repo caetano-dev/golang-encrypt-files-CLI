@@ -19,9 +19,20 @@ func CreateHash(key string) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
+//CheckFileExtension checks if the file extension exists
+func CheckFileExtension(filename string) bool {
+	if filename[len(filename)-4:] == ".txt" {
+		return true
+	}
+	return false
+}
+
 //Encrypt encrypts the data
 func Encrypt(data []byte, passphrase string) []byte {
-	block, _ := aes.NewCipher([]byte(CreateHash(passphrase)))
+	block, err := aes.NewCipher([]byte(CreateHash(passphrase)))
+	if err != nil {
+		panic(err.Error())
+	}
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		panic(err.Error())
@@ -56,16 +67,25 @@ func Decrypt(data []byte, passphrase string) []byte {
 
 //EncryptFile encrypts the file
 func EncryptFile(filename string, data []byte, passphrase string) {
-	f, _ := os.Create(filename + ".txt")
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err.Error())
+	}
 	defer f.Close()
 	f.Write(Encrypt(data, passphrase))
 }
 
 //DecryptFile decrypts the file
 func DecryptFile(filename string, passphrase string) []byte {
-	inFile, _ := os.Open(filename + ".txt")
+	inFile, err := os.Open(filename)
+	if err != nil {
+		panic(err.Error())
+	}
 	defer inFile.Close()
-	cipherText, _ := ioutil.ReadAll(inFile)
+	cipherText, err := ioutil.ReadAll(inFile)
+	if err != nil {
+		panic(err.Error())
+	}
 	return Decrypt(cipherText, passphrase)
 }
 
@@ -82,5 +102,9 @@ func ChooseEncryptOrDecrypt() string {
 	var input string
 	fmt.Print("Encrypt or Decrypt? (e/d): ")
 	fmt.Scanln(&input)
+	if input != "e" && input != "d" {
+		fmt.Println("Invalid input. Try again.")
+		return ChooseEncryptOrDecrypt()
+	}
 	return input
 }
